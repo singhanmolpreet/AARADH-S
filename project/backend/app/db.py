@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 import asyncpg
 
-from ....backend.app import config
+from . import config
 
 logger = logging.getLogger("db")
 

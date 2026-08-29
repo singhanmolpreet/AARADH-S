@@ -12,7 +12,7 @@ import logging
 import random
 from datetime import datetime, timezone
 
-from ....backend.app import db
+from . import db
 from .schemas import HealthIndex
 from .websocket_manager import ws_manager
 

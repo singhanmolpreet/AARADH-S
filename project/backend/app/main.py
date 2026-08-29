@@ -6,9 +6,9 @@ import os
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 import paho.mqtt.client as mqtt
 
-from ....backend.app import db, mqtt_client
-from ....backend.app import config
-from ....backend.app import fake_health
+from . import db, mqtt_client
+from . import config
+from . import fake_health
 from .schemas import InjectFaultRequest
 from .websocket_manager import ws_manager
 
