@@ -11,8 +11,8 @@ import logging
 
 import paho.mqtt.client as mqtt
 
-from ....backend.app import db
-from ....backend.app import config
+from . import db
+from . import config
 from .schemas import Telemetry, HealthIndex, FaultEvent, MissionAdvisory
 from .websocket_manager import ws_manager
 
