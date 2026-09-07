@@ -1,0 +1,92 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    # Internal only -- not exposed to the host. Other containers reach it
+    # at the hostname "mosquitto" on the default compose network.
+    expose:
+      - "1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t healthcheck -m ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Internal only -- not exposed to the host (see backend for how to
+    # temporarily add a "ports:" mapping back if you need host-side psql
+    # access for debugging).
+    expose:
+      - "5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: ${MQTT_BROKER_PORT}
+      POSTGRES_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@timescaledb:5432/${POSTGRES_DB}
+      FAKE_HEALTH_ENGINE_IDS: ${FAKE_HEALTH_ENGINE_IDS}
+      FAKE_HEALTH_INTERVAL_SECONDS: ${FAKE_HEALTH_INTERVAL_SECONDS}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+  # PLACEHOLDER -- P3 fills this in with the real simulator. Right now it
+  # just logs a heartbeat so `docker compose up` succeeds end to end.
+  simulator:
+    build: ./simulator
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: on-failure
+
+  # PLACEHOLDER -- P4 fills this in with the real ML inference service.
+  # Right now it just logs a heartbeat; the backend's own fake_health.py
+  # covers the frontend team in the meantime.
+  inference:
+    build: ./inference
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    restart: on-failure
+
+  # PLACEHOLDER -- whoever owns the dashboard replaces dashboard/Dockerfile
+  # with the real multi-stage React build (see comments in that file).
+  dashboard:
+    build: ./dashboard
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+volumes:
+  timescale_data:
