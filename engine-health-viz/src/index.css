@@ -1,0 +1,364 @@
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-raised: #22263a;
+  --border: #2e3250;
+  --text-primary: #e8eaf6;
+  --text-secondary: #8891b4;
+  --text-muted: #555d80;
+
+  --green:  #22c55e;
+  --yellow: #eab308;
+  --orange: #f97316;
+  --red:    #ef4444;
+
+  --panel-width: 340px;
+  --font: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 14px;
+}
+
+/* ─── App Layout ───────────────────────────────────────────────────────────── */
+.app {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* ─── Canvas Wrapper ───────────────────────────────────────────────────────── */
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+/* ─── Status Bar (top-left overlay) ────────────────────────────────────────── */
+.status-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  background: rgba(26, 29, 39, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.status-bar__engine-id {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.status-bar__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-bar__score {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.status-bar__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-bar__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.status-bar__timestamp {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Hint overlay ──────────────────────────────────────────────────────────── */
+.hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(26, 29, 39, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ─── Component Panel ───────────────────────────────────────────────────────── */
+.component-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: var(--panel-width);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.component-panel.open {
+  transform: translateX(0);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.panel__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.panel__close:hover {
+  color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+.panel__body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ─── Score Card ────────────────────────────────────────────────────────────── */
+.score-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--surface-raised);
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+}
+
+.score-card__circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 4px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.score-card__status {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.score-card__sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Metric Row ────────────────────────────────────────────────────────────── */
+.metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-row__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric-row__value {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.metric-row__unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+
+/* ─── Feature Tags ──────────────────────────────────────────────────────────── */
+.feature-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-tags__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.feature-tags__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feature-tag {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ─── Health bar ────────────────────────────────────────────────────────────── */
+.health-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.health-bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.health-bar-track {
+  height: 8px;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.health-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s ease, background-color 0.8s ease;
+}
+
+/* ─── Active faults ─────────────────────────────────────────────────────────── */
+.faults-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faults-section__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.fault-item {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+.no-faults {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Color utilities ───────────────────────────────────────────────────────── */
+.color-green  { color: var(--green); }
+.color-yellow { color: var(--yellow); }
+.color-orange { color: var(--orange); }
+.color-red    { color: var(--red); }
+
+.bg-green  { background: var(--green); }
+.bg-yellow { background: var(--yellow); }
+.bg-orange { background: var(--orange); }
+.bg-red    { background: var(--red); }
