@@ -4,23 +4,22 @@
 // driven by a live health_score uniform.  A pulsing emissive glow is added
 // when the component's status is 'red'.
 //
-// Temperature mapping (derived from health_score, no schema change needed):
-//   temperature = 1.0 − (health_score / 100)
-//   0.0 = cool / healthy   →  green palette base
-//   1.0 = hot  / critical  →  red palette
+// V2 — gradient uses LOCAL Y POSITION (vLocalY) instead of UV coordinates.
+//   CAD-exported GLTF models have arbitrary UV unwraps that don't map to Y,
+//   so vUv.y produced flat / wrong-coloured patches.  vLocalY is always
+//   available and always means "up" regardless of UV layout.
 //
-// The gradient runs bottom-to-top on the mesh (+Y direction via vUv.y),
-// so the top of a cylinder always reads a touch hotter than its base —
-// visually matching real CHT behaviour.
+// uYMin / uYMax uniforms are set from JS once the model's bounding box is
+// known so the gradient spans the full height of the engine.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const vertexShader = /* glsl */ `
-  varying vec2 vUv;
-  varying vec3 vNormal;
+  varying float vLocalY;   // raw local-space Y — used for the heat gradient
+  varying vec3  vNormal;   // view-space normal — used for rim lighting
 
   void main() {
-    vUv    = uv;
-    vNormal = normalize(normalMatrix * normal);
+    vLocalY = position.y;
+    vNormal  = normalize(normalMatrix * normal);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `
@@ -28,23 +27,26 @@ export const vertexShader = /* glsl */ `
 export const fragmentShader = /* glsl */ `
   precision mediump float;
 
-  // ── Uniforms updated every frame by useFrame ──────────────────────────────
-  uniform float uHealthScore;   // 0.0 – 100.0  (raw value from schema)
-  uniform float uTime;          // clock.elapsedTime  (seconds)
-  uniform int   uIsRed;         // 1 when component status === 'red'
+  // ── Uniforms updated every frame ─────────────────────────────────────────
+  uniform float uHealthScore;   // 0.0 – 100.0
+  uniform float uTime;          // clock.elapsedTime (seconds)
+  uniform int   uIsRed;         // 1 when status === 'red'
 
-  varying vec2  vUv;
+  // ── Gradient normalisation — set once from bounding box ──────────────────
+  // After auto-scaling, the model's Y extent fits within [uYMin, uYMax].
+  // These are the same for every material in a given session.
+  uniform float uYMin;          // world min Y after centering (negative)
+  uniform float uYMax;          // world max Y after centering (positive)
+
+  varying float vLocalY;
   varying vec3  vNormal;
 
-  // ── Palette: four colour stops matching the agreed health bands ───────────
-  //    These intentionally match healthColor.ts so the 2-D UI and 3-D mesh
-  //    always show the same semantic colours.
-  const vec3 C_GREEN  = vec3(0.133, 0.769, 0.369);  // #22c55e
-  const vec3 C_YELLOW = vec3(0.918, 0.702, 0.031);  // #eab308
-  const vec3 C_ORANGE = vec3(0.976, 0.451, 0.086);  // #f97316
-  const vec3 C_RED    = vec3(0.937, 0.267, 0.267);  // #ef4444
+  // ── Palette: four stops matching the health bands in healthColor.ts ───────
+  const vec3 C_GREEN  = vec3(0.133, 0.769, 0.369);   // #22c55e
+  const vec3 C_YELLOW = vec3(0.918, 0.702, 0.031);   // #eab308
+  const vec3 C_ORANGE = vec3(0.976, 0.451, 0.086);   // #f97316
+  const vec3 C_RED    = vec3(0.937, 0.267, 0.267);   // #ef4444
 
-  // Four-stop gradient: t = 0 (healthy/cool) → 1 (critical/hot)
   vec3 healthPalette(float t) {
     t = clamp(t, 0.0, 1.0);
     if (t < 0.333) return mix(C_GREEN,  C_YELLOW, t * 3.0);
@@ -54,35 +56,28 @@ export const fragmentShader = /* glsl */ `
 
   void main() {
 
-    // ── Temperature from health score ────────────────────────────────────────
+    // ── Temperature from health score ─────────────────────────────────────
     float temp = 1.0 - clamp(uHealthScore / 100.0, 0.0, 1.0);
 
-    // ── Vertical gradient (vUv.y: 0 = bottom, 1 = top) ──────────────────────
-    // Offset of ±0.15 adds a 30 % swing across the mesh height,
-    // so a healthy cylinder still shows a subtle warm-tip gradient
-    // and a critical one shows a stark cool-base / red-top split.
-    float gradientT = clamp(temp + 0.15 * (vUv.y * 2.0 - 1.0), 0.0, 1.0);
+    // ── Gradient via local Y — normalized to [0, 1] over engine height ────
+    float yRange  = max(uYMax - uYMin, 0.001);
+    float yNorm   = clamp((vLocalY - uYMin) / yRange, 0.0, 1.0);
+
+    // Offset ±0.15 adds a 30 % swing across the mesh height regardless of
+    // overall health — so even a healthy cylinder shows a cool-base/warm-tip.
+    float gradientT = clamp(temp + 0.15 * (yNorm * 2.0 - 1.0), 0.0, 1.0);
 
     vec3 color = healthPalette(gradientT);
 
-    // ── Rim highlight — fakes metallic specular without PBR cost ─────────────
-    // vNormal is in view space; (0,0,1) is straight toward the camera.
+    // ── Rim highlight — cheap metallic-surface cue ─────────────────────────
     float rim = 1.0 - abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)));
-    rim = pow(rim, 3.5) * 0.20;
+    rim = pow(rim, 3.0) * 0.22;
     color += vec3(rim);
 
-    // ── Red-status pulsing glow ───────────────────────────────────────────────
-    // Period ≈ 2 s  (3.14159 rad/s → 0.5 Hz)
-    // Two effects layered:
-    //   1. Hue shift toward saturated red  (mix)
-    //   2. Additive emissive bloom         (+ red * pulse)
+    // ── Red-status pulsing glow (~2 s period) ─────────────────────────────
     if (uIsRed == 1) {
       float pulse = 0.5 + 0.5 * sin(uTime * 3.14159);
-
-      // Shift entire surface toward red as pulse peaks
-      color = mix(color, C_RED, pulse * 0.45);
-
-      // Additive emissive — brightens highlights at peak
+      color  = mix(color, C_RED, pulse * 0.45);
       color += C_RED * 0.18 * pulse;
     }
 
@@ -91,16 +86,16 @@ export const fragmentShader = /* glsl */ `
 `
 
 // ─── Uniform factory ─────────────────────────────────────────────────────────
-// Creates a fresh uniforms object for a new THREE.ShaderMaterial.
-// Initialised to a healthy default so meshes render correctly before
-// the first Health Index message arrives.
+// uYMin / uYMax default to a ±1 range; overwritten once the GLTF bounding
+// box is known (GltfModelShader) or from the placeholder box heights.
 export function makeHealthUniforms() {
   return {
     uHealthScore: { value: 100.0 },
     uTime:        { value: 0.0 },
     uIsRed:       { value: 0 },
+    uYMin:        { value: -1.0 },
+    uYMax:        { value:  1.0 },
   }
 }
 
-// Shape type — used by callers that hold a ref to the uniforms object
 export type HealthUniforms = ReturnType<typeof makeHealthUniforms>

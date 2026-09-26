@@ -24,9 +24,9 @@ import { healthScoreToColor } from '../utils/healthColor'
 import { KNOWN_MESH_NAMES } from '../types/healthIndex'
 import { PlaceholderShader, GltfModelShader } from './EngineModelShader'
 
-// ─── GLTF path — set to your actual file when you have it ────────────────────
-// Place your .glb in public/engine.glb  then set GLTF_PATH = '/engine.glb'
-const GLTF_PATH: string | null = null // ← set to '/engine.glb' when ready
+// ─── GLTF path — the Rotax 914 model served from public/ ─────────────────────
+// Set back to null to fall through to the procedural placeholder.
+const GLTF_PATH: string | null = '/rotax_914.glb'
 
 // ─── Lerp speed: 1 means instant, ~0.03 gives ~1 second smooth transition ───
 const LERP_ALPHA = 0.03
