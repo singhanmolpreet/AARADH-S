@@ -1,7 +1,0 @@
-# PLACEHOLDER -- P4 fills this in with the real ML service's dependencies
-# and entrypoint (likely needs numpy/torch/etc added here). Kept minimal
-# so `docker compose up` works today.
-FROM python:3.12-slim
-WORKDIR /app
-COPY app.py .
-CMD ["python", "app.py"]
