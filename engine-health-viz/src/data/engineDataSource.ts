@@ -223,7 +223,9 @@ function subscribeMock(
 // ─── Active export ────────────────────────────────────────────────────────────
 // This is the ONLY line that controls which mode runs.
 // Flip ACTIVE_MODE at the top of this file — do not edit this block.
+// The `as Mode` cast prevents TypeScript from narrowing the const to its
+// current literal value, keeping the ternary correct when you edit ACTIVE_MODE.
 export const subscribeToEngine: (
   engineId: string,
   onMessage: EngineMessageCallback
-) => () => void = ACTIVE_MODE === 'ws' ? subscribeWebSocket : subscribeMock
+) => () => void = (ACTIVE_MODE as Mode) === 'ws' ? subscribeWebSocket : subscribeMock
