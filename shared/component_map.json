@@ -1,0 +1,10 @@
+{
+  "misfire": ["cylinder_1", "cylinder_2", "cylinder_3", "cylinder_4"],
+  "lubrication_issue": ["oil_system"],
+  "sensor_drift": [],
+  "overheating": ["cylinder_1", "cylinder_2", "cylinder_3", "cylinder_4", "exhaust"],
+  "wastegate_fault": ["turbo"],
+  "injector_fault": ["injectors"],
+  "alternator_fault": ["electrical"],
+  "air_filter_blockage": ["intake"]
+}
