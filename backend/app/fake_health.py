@@ -40,7 +40,7 @@ def _generate_fake_health(engine_id: str) -> dict:
                 "component": "cylinder_1",
                 "health_score": score,
                 "status": status,
-                "rul_hours": round(random.uniform(10, 100), 1),
+                "rul_minutes": round(random.uniform(10, 100), 1),
                 "top_features": ["cht_trend", "egt_variance"],
             }
         ],

@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 import asyncpg
 
 from . import config
@@ -61,16 +61,18 @@ async def insert_telemetry(msg: dict):
     await pool.execute(
         """
         INSERT INTO telemetry (
-            time, engine_id, mission_phase, rpm, cht_c, egt_c,
+            time, engine_id, mission_id, mission_phase, rpm, cht_c, egt_c,
             oil_pressure_bar, oil_temp_c, fuel_flow_lph, vibration_rms_g,
-            battery_voltage_v, alternator_current_a, injection_timing_deg,
-            map_kpa, boost_pressure_bar
+            battery_voltage_v, injection_timing_deg,
+            throttle_frac, power_kw, ambient_temp_c,
+            air_pressure_pa, air_density_kgm3, altitude_m
         ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+            $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
         )
         """,
         _parse_ts(msg["timestamp"]),
         msg["engine_id"],
+        msg.get("mission_id"),
         msg["mission_phase"],
         msg["rpm"],
         msg["cht_c"],
@@ -80,10 +82,13 @@ async def insert_telemetry(msg: dict):
         msg["fuel_flow_lph"],
         msg["vibration_rms_g"],
         msg["battery_voltage_v"],
-        msg["alternator_current_a"],
         msg["injection_timing_deg"],
-        msg["map_kpa"],
-        msg["boost_pressure_bar"],
+        msg["throttle_frac"],
+        msg["power_kw"],
+        msg["ambient_temp_c"],
+        msg["air_pressure_pa"],
+        msg["air_density_kgm3"],
+        msg["altitude_m"],
     )
 
 
@@ -121,12 +126,13 @@ async def insert_health(msg: dict):
     await pool.execute(
         """
         INSERT INTO health_index (
-            time, engine_id, components, overall_health_score,
+            time, engine_id, mission_id, components, overall_health_score,
             overall_status, active_faults
-        ) VALUES ($1,$2,$3,$4,$5,$6)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)
         """,
         _parse_ts(msg["timestamp"]),
         msg["engine_id"],
+        msg.get("mission_id"),
         json.dumps(msg["components"]),
         msg["overall_health_score"],
         msg["overall_status"],
@@ -179,16 +185,19 @@ async def insert_fault(msg: dict):
     await pool.execute(
         """
         INSERT INTO fault_event (
-            time, engine_id, fault_type, component, confidence,
-            severity, title, evidence, recommended_action
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            time, engine_id, mission_id, fault_type, fault_type_code, component,
+            confidence, severity, severity_frac, title, evidence, recommended_action
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
         """,
         _parse_ts(msg["timestamp"]),
         msg["engine_id"],
+        msg.get("mission_id"),
         msg["fault_type"],
+        msg.get("fault_type_code"),
         msg["component"],
         msg["confidence"],
         msg["severity"],
+        msg.get("severity_frac"),
         msg["title"],
         msg["evidence"],
         msg["recommended_action"],
@@ -213,12 +222,14 @@ async def insert_mission_advisory(msg: dict):
     await pool.execute(
         """
         INSERT INTO mission_advisory (
-            time, engine_id, rul_minutes, mission_time_remaining_minutes,
+            time, engine_id, mission_id, rul_minutes,
+            mission_time_remaining_minutes,
             recommended_strategy, estimated_new_rul_minutes
-        ) VALUES ($1,$2,$3,$4,$5,$6)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)
         """,
         _parse_ts(msg["timestamp"]),
         msg["engine_id"],
+        msg.get("mission_id"),
         msg["rul_minutes"],
         msg["mission_time_remaining_minutes"],
         msg["recommended_strategy"],
@@ -238,3 +249,109 @@ async def get_latest_mission_advisory(engine_id: str):
         engine_id,
     )
     return dict(row) if row else None
+
+
+async def list_missions(engine_id: Optional[str] = None) -> List[dict]:
+    """
+    Returns one summary row per mission_id: first/last timestamp,
+    sample count, dominant mission_phase, worst fault type and max
+    severity_frac seen during that mission.
+    """
+    pool = get_pool()
+    if engine_id:
+        rows = await pool.fetch(
+            """
+            SELECT
+                t.mission_id,
+                t.engine_id,
+                MIN(t.time)::text          AS start_ts,
+                MAX(t.time)::text          AS end_ts,
+                COUNT(*)::int              AS n_samples,
+                MODE() WITHIN GROUP (ORDER BY t.mission_phase) AS mission_phase,
+                f.worst_fault_type,
+                f.max_severity_frac
+            FROM telemetry t
+            LEFT JOIN LATERAL (
+                SELECT fault_type AS worst_fault_type,
+                       MAX(severity_frac) AS max_severity_frac
+                FROM fault_event
+                WHERE mission_id = t.mission_id
+                GROUP BY fault_type
+                ORDER BY MAX(severity_frac) DESC
+                LIMIT 1
+            ) f ON TRUE
+            WHERE t.engine_id = $1 AND t.mission_id IS NOT NULL
+            GROUP BY t.mission_id, t.engine_id, f.worst_fault_type, f.max_severity_frac
+            ORDER BY MIN(t.time) DESC
+            """,
+            engine_id,
+        )
+    else:
+        rows = await pool.fetch(
+            """
+            SELECT
+                t.mission_id,
+                t.engine_id,
+                MIN(t.time)::text          AS start_ts,
+                MAX(t.time)::text          AS end_ts,
+                COUNT(*)::int              AS n_samples,
+                MODE() WITHIN GROUP (ORDER BY t.mission_phase) AS mission_phase,
+                f.worst_fault_type,
+                f.max_severity_frac
+            FROM telemetry t
+            LEFT JOIN LATERAL (
+                SELECT fault_type AS worst_fault_type,
+                       MAX(severity_frac) AS max_severity_frac
+                FROM fault_event
+                WHERE mission_id = t.mission_id
+                GROUP BY fault_type
+                ORDER BY MAX(severity_frac) DESC
+                LIMIT 1
+            ) f ON TRUE
+            WHERE t.mission_id IS NOT NULL
+            GROUP BY t.mission_id, t.engine_id, f.worst_fault_type, f.max_severity_frac
+            ORDER BY MIN(t.time) DESC
+            """,
+        )
+    return [dict(r) for r in rows]
+
+
+async def get_mission_replay(mission_id: str) -> List[dict]:
+    """
+    Returns all telemetry, health and fault rows for a mission_id,
+    merged and time-ordered, each row shaped as {ts, telemetry, health, fault}.
+    """
+    pool = get_pool()
+    tel_rows = await pool.fetch(
+        "SELECT * FROM telemetry WHERE mission_id = $1 ORDER BY time ASC",
+        mission_id,
+    )
+    health_rows = await pool.fetch(
+        "SELECT * FROM health_index WHERE mission_id = $1 ORDER BY time ASC",
+        mission_id,
+    )
+    fault_rows = await pool.fetch(
+        "SELECT * FROM fault_event WHERE mission_id = $1 ORDER BY time ASC",
+        mission_id,
+    )
+
+    timeline: dict = {}
+    for r in tel_rows:
+        ts = str(r["time"])
+        timeline.setdefault(ts, {"ts": ts, "telemetry": None, "health": None, "fault": None})
+        timeline[ts]["telemetry"] = dict(r)
+    for r in health_rows:
+        ts = str(r["time"])
+        entry = timeline.setdefault(ts, {"ts": ts, "telemetry": None, "health": None, "fault": None})
+        d = dict(r)
+        if isinstance(d.get("components"), str):
+            d["components"] = json.loads(d["components"])
+        if isinstance(d.get("active_faults"), str):
+            d["active_faults"] = json.loads(d["active_faults"])
+        entry["health"] = d
+    for r in fault_rows:
+        ts = str(r["time"])
+        entry = timeline.setdefault(ts, {"ts": ts, "telemetry": None, "health": None, "fault": None})
+        entry["fault"] = dict(r)
+
+    return sorted(timeline.values(), key=lambda x: x["ts"])

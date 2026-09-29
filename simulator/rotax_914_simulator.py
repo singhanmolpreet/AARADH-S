@@ -363,7 +363,7 @@ class EngineSimulator:
     SCHEMA_FIELDS = [
         "timestamp", "engine_id", "mission_phase", "rpm", "cht_c", "egt_c",
         "oil_pressure_bar", "oil_temp_c", "fuel_flow_lph", "vibration_rms_g",
-        "battery_voltage_v", "alternator_current_a", "injection_timing_deg",
+        "battery_voltage_v", "throttle_frac", "injection_timing_deg",
         "map_kpa", "boost_pressure_bar",
     ]
 
@@ -630,7 +630,7 @@ class EngineSimulator:
             "fuel_flow_lph": round(fuel_flow_lph, 2),
             "vibration_rms_g": round(vibration_rms_g, 3),
             "battery_voltage_v": round(battery_v, 2),
-            "alternator_current_a": round(alternator_a, 2),
+            "throttle_frac": round(alternator_a, 2),
             "injection_timing_deg": round(injection_timing_deg, 1),
             "map_kpa": round(map_kpa, 1),
             "boost_pressure_bar": round(boost_bar, 3),

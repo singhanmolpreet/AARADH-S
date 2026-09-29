@@ -91,7 +91,7 @@ export function ComponentPanel({ component, message, onClose }: ComponentPanelPr
           <div className="metric-row">
             <span className="metric-row__label">Remaining Useful Life</span>
             <span className="metric-row__value">
-              {component.rul_hours.toFixed(1)}
+              {component.rul_minutes.toFixed(1)}
               <span className="metric-row__unit">hrs</span>
             </span>
           </div>

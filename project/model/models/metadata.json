@@ -1,0 +1,306 @@
+{
+  "project": "AI-Enabled Digital Twin for MALE UAV Aero Piston Engines",
+  "model_type": {
+    "classifier": "XGBoost multi-class",
+    "regressor": "XGBoost regressor"
+  },
+  "data": {
+    "path": "data\\processed\\rotax_combined_clean.csv",
+    "raw_rows": 1046474,
+    "raw_runs": 1248,
+    "train_raw_rows": 834218,
+    "holdout_raw_rows": 212256,
+    "train_feature_rows": 805276,
+    "holdout_feature_rows": 205006,
+    "train_runs": 998,
+    "holdout_runs": 250
+  },
+  "features": {
+    "source": "project/model/features.py",
+    "feature_count": 30,
+    "feature_list": [
+      "rpm_roll_mean",
+      "rpm_roll_var",
+      "rpm_diff_5",
+      "cht_c_roll_mean",
+      "cht_c_roll_var",
+      "cht_c_diff_5",
+      "egt_c_roll_mean",
+      "egt_c_roll_var",
+      "egt_c_diff_5",
+      "oil_temp_c_roll_mean",
+      "oil_temp_c_roll_var",
+      "oil_temp_c_diff_5",
+      "oil_pressure_bar_roll_mean",
+      "oil_pressure_bar_roll_var",
+      "oil_pressure_bar_diff_5",
+      "battery_voltage_v_roll_mean",
+      "battery_voltage_v_roll_var",
+      "battery_voltage_v_diff_5",
+      "vibration_rms_g_roll_mean",
+      "vibration_rms_g_roll_var",
+      "vibration_rms_g_diff_5",
+      "fuel_flow_lph_roll_mean",
+      "fuel_flow_lph_roll_var",
+      "fuel_flow_lph_diff_5",
+      "throttle_frac",
+      "power_kw",
+      "mission_phase_endurance_low_throttle",
+      "mission_phase_steady_cruise",
+      "mission_phase_high_power_climb",
+      "mission_phase_rapid_throttle_transitions"
+    ]
+  },
+  "class_map": {
+    "0": "healthy",
+    "1": "misfire",
+    "2": "lubrication_issue",
+    "3": "sensor_drift",
+    "4": "overheating",
+    "5": "wastegate_fault",
+    "6": "injector_fault",
+    "7": "alternator_fault",
+    "8": "air_filter_blockage"
+  },
+  "classifier": {
+    "target": "fault_type_code",
+    "objective": "multi:softprob",
+    "num_class": 9,
+    "healthy_class_weight": 1.3,
+    "fault_class_weight": 1.0,
+    "class_weight_interpretation": "Healthy rows receive weight 1.3; all fault rows receive weight 1.0.",
+    "metrics": {
+      "per_class": {
+        "0": {
+          "name": "healthy",
+          "precision": 0.9894515044039315,
+          "recall": 1.0,
+          "f1": 0.9946977870168144,
+          "support": 75603
+        },
+        "1": {
+          "name": "misfire",
+          "precision": 1.0,
+          "recall": 0.9991738382099827,
+          "f1": 0.99958674839865,
+          "support": 14525
+        },
+        "2": {
+          "name": "lubrication_issue",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 17759
+        },
+        "3": {
+          "name": "sensor_drift",
+          "precision": 1.0,
+          "recall": 0.9990945406125167,
+          "f1": 0.9995470652492473,
+          "support": 18775
+        },
+        "4": {
+          "name": "overheating",
+          "precision": 1.0,
+          "recall": 0.9813484708063022,
+          "f1": 0.990586446822195,
+          "support": 17264
+        },
+        "5": {
+          "name": "wastegate_fault",
+          "precision": 0.6953015168331483,
+          "recall": 0.6455757076119814,
+          "f1": 0.6695165829503759,
+          "support": 14556
+        },
+        "6": {
+          "name": "injector_fault",
+          "precision": 1.0,
+          "recall": 0.9729225585173596,
+          "f1": 0.9862754666341345,
+          "support": 16619
+        },
+        "7": {
+          "name": "alternator_fault",
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 14055
+        },
+        "8": {
+          "name": "air_filter_blockage",
+          "precision": 0.6932370010659719,
+          "recall": 0.7385488958990536,
+          "f1": 0.7151759530791789,
+          "support": 15850
+        }
+      },
+      "macro_f1": 0.9283762277945107,
+      "confusion_matrix": [
+        [
+          75603,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          14513,
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          17759,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          17,
+          0,
+          0,
+          18758,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          322,
+          0,
+          0,
+          0,
+          16942,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          9397,
+          0,
+          0,
+          5159
+        ],
+        [
+          429,
+          0,
+          0,
+          0,
+          0,
+          0,
+          16169,
+          0,
+          21
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          14055,
+          0
+        ],
+        [
+          38,
+          0,
+          0,
+          0,
+          0,
+          4106,
+          0,
+          0,
+          11706
+        ]
+      ],
+      "labels": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "class_7": {
+      "name": "alternator_fault",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 14055
+    }
+  },
+  "regressor": {
+    "target": "fault_severity",
+    "target_range": [
+      0.0,
+      1.0
+    ],
+    "healthy_target": 0.0,
+    "health_score_formula": "100 * (1 - severity_hat)",
+    "metrics": {
+      "mae": 0.054568721886453085,
+      "rmse": 0.09589947605929881,
+      "r2": 0.9355940047589291,
+      "predicted_severity_min": 0.0,
+      "predicted_severity_max": 1.0,
+      "predicted_health_score_min": 0.0,
+      "predicted_health_score_max": 100.0,
+      "class_7": {
+        "rows": 14055,
+        "mae": 0.01620578264669203,
+        "rmse": 0.022546223358701108
+      }
+    }
+  },
+  "class_7_voltage_analysis": {
+    "available": true,
+    "trivially_separable": false,
+    "class_7_voltage_min": 8.22960457158549,
+    "class_7_voltage_max": 12.4578070206253,
+    "non_class_7_voltage_min": 11.6700372095136,
+    "non_class_7_voltage_max": 31.6638496025386,
+    "class_7_rows_below_non7_min": 13275,
+    "class_7_rows": 14055
+  },
+  "split": {
+    "method": "run-level train_test_split",
+    "test_size": 0.2,
+    "stratified_by": "fault_type_code",
+    "random_state": 42,
+    "run_leakage_checked": true
+  },
+  "artifacts": {
+    "classifier": "project\\model\\models\\fault_classifier.joblib",
+    "regressor": "project\\model\\models\\fault_severity_regressor.joblib",
+    "metadata": "project\\model\\models\\metadata.json",
+    "holdout_runs": "project\\model\\models\\holdout_runs.json"
+  }
+}

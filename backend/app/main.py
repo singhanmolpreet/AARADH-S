@@ -106,20 +106,17 @@ async def faults_active(engine_id: str = Query(...)):
 
 @app.get("/api/mission/list")
 async def mission_list():
-    raise HTTPException(
-        status_code=501,
-        detail="Not implemented: no schema for a 'mission' object was provided. "
-        "Tell me the fields a mission record should have and I'll wire this up.",
-    )
+    return await db.list_missions()
 
 
 @app.get("/api/mission/replay")
 async def mission_replay(mission_id: str = Query(...), speed: str = Query("1x")):
-    raise HTTPException(
-        status_code=501,
-        detail="Not implemented: no schema for mission replay data was provided. "
-        "Tell me what a replay response should contain and I'll wire this up.",
-    )
+    if speed not in ["1x", "2x", "5x", "10x", "max"]:
+        raise HTTPException(status_code=400, detail="Invalid speed. Supported: 1x, 2x, 5x, 10x, max")
+    replay_data = await db.get_mission_replay(mission_id)
+    if not replay_data:
+        raise HTTPException(status_code=404, detail=f"No data found for mission_id={mission_id}")
+    return replay_data
 
 
 @app.get("/api/mission/advisory")

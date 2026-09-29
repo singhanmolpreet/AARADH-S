@@ -14,6 +14,7 @@ except ImportError:
 SAMPLE = {
     "timestamp": "2026-08-29T10:57:19.012170+00:00",
     "engine_id": "ENG01",
+    "mission_id": "42",
     "mission_phase": "cruise",
     "rpm": 5400,
     "cht_c": 140,
@@ -23,10 +24,13 @@ SAMPLE = {
     "fuel_flow_lph": 18.7,
     "vibration_rms_g": 0.42,
     "battery_voltage_v": 27.6,
-    "alternator_current_a": 12.1,
     "injection_timing_deg": 12.5,
-    "map_kpa": 88.0,
-    "boost_pressure_bar": 0.25,
+    "throttle_frac": 0.85,
+    "power_kw": 25.4,
+    "ambient_temp_c": 15.2,
+    "air_pressure_pa": 101325.0,
+    "air_density_kgm3": 1.225,
+    "altitude_m": 1200.0,
 }
 
 

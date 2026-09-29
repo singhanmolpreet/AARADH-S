@@ -10,7 +10,7 @@ export interface ComponentHealth {
   /** Derived status string from health_score bands */
   status: 'green' | 'yellow' | 'orange' | 'red'
   /** Remaining Useful Life in hours */
-  rul_hours: number
+  rul_minutes: number
   /** Top contributing sensor/feature names */
   top_features: string[]
 }

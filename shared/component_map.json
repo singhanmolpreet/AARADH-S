@@ -1,4 +1,5 @@
 {
+  "_comment": "Maps fault_type -> affected components. mission_id groups all telemetry/health/fault records for one flight.",
   "misfire": ["cylinder_1", "cylinder_2", "cylinder_3", "cylinder_4"],
   "lubrication_issue": ["oil_system"],
   "sensor_drift": [],
