@@ -13,7 +13,7 @@
 // ─── Demo-day safety toggle ──────────────────────────────────────────────────
 // Flip to false in <30 seconds if the shader has any issue near demo day.
 // Every other file stays untouched — only this line changes.
-const USE_SHADER = true
+const USE_SHADER = false
 
 import { useRef, useMemo, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'

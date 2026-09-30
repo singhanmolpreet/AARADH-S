@@ -30,7 +30,7 @@ export interface HealthIndexMessage {
   active_faults: string[]
 }
 
-/** The seven named meshes in the GLTF — kept here for reference / validation */
+/** The named meshes in the GLTF — kept here for reference / validation */
 export const KNOWN_MESH_NAMES = [
   'cylinder_1',
   'cylinder_2',
@@ -39,6 +39,9 @@ export const KNOWN_MESH_NAMES = [
   'oil_system',
   'exhaust',
   'injectors',
+  'turbo',
+  'intake',
+  'electrical',
 ] as const
 
 export type MeshName = typeof KNOWN_MESH_NAMES[number]

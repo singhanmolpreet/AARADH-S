@@ -520,12 +520,18 @@ const GLTF_MESH_MAP: Record<string, string[]> = {
     'Koleno1_sldasm-Part-1',
     'Koleno1_sldasm-Part-2',
   ],
-  injectors: [
-    'Turbina_1',              // turbocharger (Rotax 914 is turbocharged)
+  turbo: [
+    'Turbina_1',
+  ],
+  intake: [
     'Vhodnoy_kollektor',      // intake collector
     'Patrubok_vhodnoy',       // intake pipe / throttle body
+  ],
+  electrical: [
+    'Korpus_magneto',         // magneto housing (electrical generation)
     'Starter',                // starter motor
   ],
+  injectors: [],
 }
 
 // Reverse map: GLB node name → health component name (for O(1) lookup)

@@ -20,7 +20,7 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 }
 
 export default function App() {
-  const { message, selectedComponent, setSelectedComponent } = useEngineHealth(ENGINE_ID)
+  const { message, selectedComponent, setSelectedComponent, isMock } = useEngineHealth(ENGINE_ID)
 
   // Close panel on Escape
   const handleKeyDown = useCallback(
@@ -78,6 +78,20 @@ export default function App() {
               <span className="status-bar__label">Overall Health</span>
             </div>
           </div>
+          {isMock && (
+            <div style={{ marginTop: 8 }}>
+              <span className="status-bar__badge" style={{ background: '#ef444422', color: '#ef4444', border: '1px solid #ef444455' }}>
+                MOCK DATA
+              </span>
+            </div>
+          )}
+          {message?.components?.find(c => c.component === 'sensor_drift' && c.status !== 'green') && (
+            <div style={{ marginTop: 8 }}>
+              <span className="status-bar__badge" style={{ background: '#f9731622', color: '#f97316', border: '1px solid #f9731655' }}>
+                SENSOR DRIFT
+              </span>
+            </div>
+          )}
           <span className="status-bar__timestamp">Updated {ts}</span>
         </div>
 

@@ -13,6 +13,15 @@ IMPLEMENTATION COMPLETE
 - Implemented `/api/mission/list` and `/api/mission/replay` endpoints in `backend/app/main.py`.
 - Removed stale fields (`alternator_current_a`, `rul_hours`, etc.) across test, simulator, and frontend files.
 
+## Frontend Visualization Updates
+- Replaced hardcoded `ACTIVE_MODE` and `WS_HOST` in `engineDataSource.ts` with Vite environment variables `VITE_DATA_MODE` and `VITE_WS_HOST`.
+- Implemented automatic and visible fallback to mock data when WebSocket connection fails. A "MOCK DATA" badge is displayed in the UI.
+- Updated frontend types to match `docs/schemas.md`, strictly using `rul_minutes`.
+- Extended `GLTF_MESH_MAP` to include `turbo` (`Turbina_1`), `intake` (`Vhodnoy_kollektor`, `Patrubok_vhodnoy`), and `electrical` (`Korpus_magneto`, `Starter`).
+- Configured `sensor_drift` to be displayed as a badge in the UI since it has no physical mesh representation.
+- No component click-to-explode behavior was introduced.
+- Evaluated frontend with manual inspection.
+
 ## Files Changed
 - `backend/app/main.py`
 - `backend/db/002_schema_v2.sql` (created)

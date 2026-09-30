@@ -13,16 +13,20 @@ interface UseEngineHealthReturn {
   selectedComponent: ComponentHealth | null
   /** Call with a component to open the side panel for it */
   setSelectedComponent: (c: ComponentHealth | null) => void
+  /** True if the data source is currently mocking data */
+  isMock: boolean
 }
 
 export function useEngineHealth(engineId: string): UseEngineHealthReturn {
   const [message, setMessage] = useState<HealthIndexMessage | null>(null)
   const [selectedComponent, setSelectedComponent] = useState<ComponentHealth | null>(null)
+  const [isMock, setIsMock] = useState<boolean>(false)
 
   useEffect(() => {
     // subscribeToEngine returns an unsubscribe function — call it on cleanup
-    const unsubscribe = subscribeToEngine(engineId, (msg) => {
+    const unsubscribe = subscribeToEngine(engineId, (msg, mockFlag = false) => {
       setMessage(msg)
+      setIsMock(mockFlag)
 
       // If a component is selected, keep the panel data fresh with the new message
       setSelectedComponent((prev) => {
@@ -39,5 +43,5 @@ export function useEngineHealth(engineId: string): UseEngineHealthReturn {
     setSelectedComponent(c)
   }, [])
 
-  return { message, selectedComponent, setSelectedComponent: handleSetSelected }
+  return { message, selectedComponent, setSelectedComponent: handleSetSelected, isMock }
 }

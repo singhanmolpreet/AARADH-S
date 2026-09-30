@@ -13,19 +13,19 @@
 import type { HealthIndexMessage } from '../types/healthIndex'
 
 /** Callback type consumed by useEngineHealth */
-export type EngineMessageCallback = (msg: HealthIndexMessage) => void
+export type EngineMessageCallback = (msg: HealthIndexMessage, isMock?: boolean) => void
 
 // ─── Mode switch ─────────────────────────────────────────────────────────────
 // Change this one value to flip between live and mock.
 // 'ws'   → real backend  (default going forward)
 // 'mock' → cycle MOCK_MESSAGES locally (instant rollback, no backend needed)
 type Mode = 'ws' | 'mock'
-const ACTIVE_MODE: Mode = 'mock'
+const ACTIVE_MODE: Mode = (import.meta.env.VITE_DATA_MODE as Mode) || 'mock'
 
 // ─── Backend endpoint ─────────────────────────────────────────────────────────
 // Schema:  ws://<backendhost>:8000/ws/live/{engineId}
 // Replace <backendhost> with the actual hostname or IP before deploying.
-const WS_HOST = '<backendhost>'
+const WS_HOST = import.meta.env.VITE_WS_HOST || 'localhost'
 const WS_PORT = 8000
 const WS_BASE  = `ws://${WS_HOST}:${WS_PORT}`
 
@@ -57,6 +57,20 @@ export function subscribeWebSocket(
   let retryDelay    = RECONNECT_BASE_MS
   let retryTimer:   ReturnType<typeof setTimeout> | null = null
   let destroyed     = false   // set true by unsubscribe(); stops reconnect loop
+  let mockUnsubscribe: (() => void) | null = null
+
+  function startMock() {
+    if (!mockUnsubscribe) {
+      mockUnsubscribe = subscribeMock(engineId, onMessage)
+    }
+  }
+
+  function stopMock() {
+    if (mockUnsubscribe) {
+      mockUnsubscribe()
+      mockUnsubscribe = null
+    }
+  }
 
   function connect() {
     if (destroyed) return
@@ -67,12 +81,13 @@ export function subscribeWebSocket(
     ws.onopen = () => {
       console.info(`[engineDataSource] Connected to ${url}`)
       retryDelay = RECONNECT_BASE_MS   // reset backoff on successful connection
+      stopMock()
     }
 
     ws.onmessage = (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data as string) as HealthIndexMessage
-        onMessage(msg)
+        onMessage(msg, false)
       } catch (err) {
         console.error('[engineDataSource] Failed to parse message:', err, event.data)
       }
@@ -81,11 +96,14 @@ export function subscribeWebSocket(
     ws.onerror = (err) => {
       // onerror always fires before onclose — log here, reconnect in onclose
       console.warn('[engineDataSource] WebSocket error:', err)
+      startMock()
     }
 
     ws.onclose = (event) => {
       ws = null
       if (destroyed) return   // intentional close — do not reconnect
+
+      startMock()
 
       // Jitter: multiply by a random factor in [1-jitter, 1+jitter]
       const jitter = 1 + (Math.random() * 2 - 1) * RECONNECT_JITTER
@@ -101,11 +119,13 @@ export function subscribeWebSocket(
     }
   }
 
+  startMock() // Start mock immediately in case connection takes a while or fails
   connect()   // initial connection attempt
 
   // ── Unsubscribe / cleanup ─────────────────────────────────────────────────
   return () => {
     destroyed = true
+    stopMock()
     if (retryTimer !== null) clearTimeout(retryTimer)
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
       ws.close(1000, 'Component unmounted')
@@ -212,10 +232,10 @@ function subscribeMock(
   onMessage: EngineMessageCallback
 ): () => void {
   let index = 0
-  onMessage(MOCK_MESSAGES[index])
+  onMessage(MOCK_MESSAGES[index], true)
   const timer = setInterval(() => {
     index = (index + 1) % MOCK_MESSAGES.length
-    onMessage(MOCK_MESSAGES[index])
+    onMessage(MOCK_MESSAGES[index], true)
   }, 3000)
   return () => clearInterval(timer)
 }
