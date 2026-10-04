@@ -53,15 +53,6 @@ services:
       retries: 5
     restart: on-failure
 
-  # PLACEHOLDER -- P3 fills this in with the real simulator. Right now it
-  # just logs a heartbeat so `docker compose up` succeeds end to end.
-  simulator:
-    build: ./simulator
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    restart: on-failure
-
   # PLACEHOLDER -- P4 fills this in with the real ML inference service.
   # Right now it just logs a heartbeat; the backend's own fake_health.py
   # covers the frontend team in the meantime.
@@ -72,9 +63,7 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # PLACEHOLDER -- whoever owns the dashboard replaces dashboard/Dockerfile
-  # with the real multi-stage React build (see comments in that file).
-  dashboard:
+  frontend:
     build: ./frontend
     depends_on:
       backend:
